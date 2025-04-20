@@ -26,7 +26,7 @@ pip install requests pytz
 
 ## 🔗 Configure Your Spot and Slack Channel
 
-Open `navarre.py` and edit the following values near the top:
+Open `surfbot.py` and edit the following values near the top:
 
 ```python
 SPOT_ID = "YOUR_SPOT_ID"  # Get this from Surfline
@@ -67,14 +67,45 @@ Add something like:
 0 6 * * * /usr/bin/python3 /path/to/navarre.py
 ```
 
+## 🌬️ Customizing Wind Labels for Your Break
+
+Wind classifications like **offshore**, **onshore**, and **cross-shore** are currently calibrated for **Navarre Beach, Florida**, which faces **south**.
+
+If you're using a different surf break (like **Pipeline**, which faces **north/northwest**), you should **adjust the wind direction logic** to match your beach orientation.
+
+### 📍 Example: Pipeline (North/NW facing)
+
+Update this section in `surfbot.py`:
+
+```python
+def get_wind_label(degrees):
+    if degrees is None:
+        return ""
+    # Offshore for Pipeline = South winds
+    if 120 <= degrees <= 240:
+        return "✅ Offshore winds — clean conditions"
+    elif 300 <= degrees or degrees <= 60:
+        return "⚠️ Onshore winds — likely choppy"
+    elif (75 <= degrees <= 105) or (255 <= degrees <= 285):
+        return "↔️ Cross-shore winds — moderate drift"
+    return ""
+```
+
+You’ll need to match:
+- **Offshore winds** = coming from land (opposite of wave direction)
+- **Onshore winds** = coming from ocean
+- **Cross-shore** = parallel to shoreline
+
+Use a map and a compass if needed — or just stand at the break and see which way the wind feels "clean."
+
 ## ✅ Example Output in Slack
 
 ```
-🔥 Tue Apr 23, 06:00 AM to 09:00 AM — Fair to Good (Rating: 3.1)
+🔥 Tue Apr 20, 06:00 AM to 09:00 AM — Fair to Good (Rating: 3.1)
   🌊 2.5–3.5 ft waves
   🌬️ Wind: 4.3 kts @ 335° ↖️ NW ✅ Offshore winds — clean conditions
   📈 Swell: 7.5 s period
   🌊 Tide: Rising (0.3ft → 1.0ft) ✅ Ideal: Low tide rising
 ```
 
-PRs welcome. Paddle in. 🌊
+Paddle in. 🌊
