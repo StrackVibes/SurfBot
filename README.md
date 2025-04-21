@@ -127,21 +127,39 @@ Then add this line to check at 6 AM:
 
 ## 🌬️ Customizing Wind Logic
 
-Surfbot is set up for **Navarre Beach**, which faces south.
+Surfbot is tuned for **Navarre Beach, Florida**, which faces **south**. If your break faces a different direction, use this guide to update the `get_wind_label()` function in `surfbot.py`.
 
-If your beach faces another direction (like **Pipeline**, NW), you can tweak this part of the code:
+### 📌 Use the table below to calibrate your offshore, onshore, and cross-shore logic:
+
+| Surf Break              | Facing Dir | ✅ Offshore Winds      | ⚠️ Onshore Winds       | ↔️ Cross-Shore Winds    |
+|-------------------------|------------|------------------------|------------------------|--------------------------|
+| Navarre Beach, FL       | South      | N (0°)                 | S (180°)               | E/W (90° / 270°)          |
+| Pipeline, HI            | Northwest  | SE (135°)              | NW (315°)              | NE/SW (45° / 225°)        |
+| Ocean Beach, CA         | West       | E (90°)                | W (270°)               | N/S (0° / 180°)           |
+| Trestles, CA            | South/SW   | NE (45°–90°)           | SW (210°–240°)         | NW/SE (135° / 315°)       |
+| Sebastian Inlet, FL     | East       | W (270°)               | E (90°)                | N/S (0° / 180°)           |
+
+### ✏️ Example Code Adjustment
+
+If your break faces **west** like Ocean Beach, update your wind logic like this:
 
 ```python
 def get_wind_label(degrees):
-    if 120 <= degrees <= 240:  # Offshore for NW-facing beaches
+    if 60 <= degrees <= 120:      # Offshore from east
         return "✅ Offshore"
-    elif 300 <= degrees or degrees <= 60:
+    elif 240 <= degrees <= 300:   # Onshore from west
         return "⚠️ Onshore"
-    elif (75 <= degrees <= 105) or (255 <= degrees <= 285):
+    elif (0 <= degrees <= 30) or (150 <= degrees <= 210):
         return "↔️ Cross-shore"
+    return ""
 ```
 
+You can adjust these values based on maps, satellite views, or just standing on the sand and feeling where the wind comes from. 🌬️
+
+
+
 ---
+
 
 ## 🧼 Troubleshooting
 
