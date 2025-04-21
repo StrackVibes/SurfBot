@@ -1,6 +1,11 @@
 # 🌊 Surfbot – Slack Surf Forecast for Your Local Break
 
+> _“I don’t know about you, but I hate checking Surfline every day just to see if there’s something on the horizon.  
+> I’d rather get a notification only when it’s worth paddling out, customized to the kind of surf I actually want.”_  
+> — You, probably 🤙
+
 Surfbot pulls surf conditions from Surfline and posts only the best windows directly to your Slack channel. It filters based on swell quality, wind direction, and tide — so you only get pinged when it's worth it.
+
 
 ## 🔧 Features
 
