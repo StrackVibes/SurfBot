@@ -9,7 +9,7 @@ Surfbot checks Surfline for you and posts only the good surf windows to your Sla
 ---
 
 ## 🛠️ What You’ll Need
-- A computer with **Python** installed (Mac, Linux, or Windows with WSL)
+- A Linux computer with **Python** installed
 - A **Slack workspace** (free account is fine)
 - A **Surfline spot** (your local break)
 
