@@ -1,12 +1,21 @@
 import requests
 import time
+import os
 from datetime import datetime, timedelta
 import pytz
+from dotenv import load_dotenv
 
-# === CONFIG ===
-SPOT_ID = "5842041f4e65fad6a7708b03"  # Navarre Beach
+# === LOAD CONFIG FROM .env ===
+load_dotenv()
+
+SPOT_ID = os.getenv("SPOT_ID")
+SPOT_NAME = os.getenv("SPOT_NAME", "Your Break")
+LOCAL_TZ = pytz.timezone(os.getenv("LOCAL_TZ", "UTC"))
+WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
+SLACK_CHANNEL = os.getenv("SLACK_CHANNEL", "#general")
+SLACK_USERNAME = os.getenv("SLACK_USERNAME", "surfbot")
+
 BASE_URL = "https://services.surfline.com/kbyg/spots/forecasts"
-LOCAL_TZ = pytz.timezone("US/Central")
 MIN_RATING = 2.5
 DAYS = 6
 INTERVAL = 1
@@ -22,21 +31,17 @@ headers = {
     "User-Agent": "surfbot/1.0 (+https://github.com/surfbot)"
 }
 
-# === SLACK CONFIG ===
-webhook_url = 'https://hooks.slack.com/services/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'
-
 def post_to_slack(message):
     slack_data = {
-        "channel": "#pensacola",
-        "username": "surfbot",
+        "channel": SLACK_CHANNEL,
+        "username": SLACK_USERNAME,
         "icon_emoji": ":surfer:",
         "text": message
     }
-    response = requests.post(webhook_url, json=slack_data)
+    response = requests.post(WEBHOOK_URL, json=slack_data)
     if response.status_code != 200:
         print(f"[ERROR] Slack post failed: {response.status_code} - {response.text}")
 
-# === FETCH FUNCTION WITH RETRIES ===
 def fetch_json(endpoint):
     url = f"{BASE_URL}/{endpoint}"
     for attempt in range(3):
@@ -59,7 +64,6 @@ def fetch_json(endpoint):
     print(f"[FATAL] Too many 429s or other errors for {endpoint}")
     return None
 
-# === WIND + TIDE HELPERS ===
 def get_wind_label(degrees):
     if degrees is None:
         return ""
@@ -93,19 +97,14 @@ def get_cardinal_direction(source_deg):
 def get_tide_trend(start_ts, end_ts, tide_data):
     start_tide = next((t for t in reversed(tide_data) if t["timestamp"] <= start_ts), None)
     end_tide = next((t for t in reversed(tide_data) if t["timestamp"] <= end_ts), None)
-
     if not start_tide or not end_tide:
-        return "🌊 Tide: Data unavailable"
-
+        return "🌊 Tide: Data unavailable", "Unknown", 0
     trend = "Rising" if end_tide["height"] > start_tide["height"] else "Falling"
     trend_str = f"🌊 Tide: {trend} ({start_tide['height']:.1f}ft → {end_tide['height']:.1f}ft)"
-
     if start_tide["height"] <= 0.5 and trend == "Rising":
         trend_str += " ✅ Ideal: Low tide rising"
-
     return trend_str, trend, start_tide["height"]
 
-# === FETCH DATA ===
 rating_res = fetch_json("rating")
 wave_res = fetch_json("wave")
 wind_res = fetch_json("wind")
@@ -120,13 +119,12 @@ wave_data = wave_res["data"]["wave"]
 wind_data = wind_res["data"]["wind"]
 tide_data = tide_res["data"]["tides"]
 
-# === MERGE & CLEAN ===
 combined = []
 for rating in rating_data:
     if rating["rating"]["value"] >= MIN_RATING:
         ts = rating["timestamp"]
         wave = next((w for w in wave_data if w["timestamp"] == ts), None)
-        wind = next((w for w in wind_data if w["timestamp"] == ts), {})  # fallback if missing
+        wind = next((w for w in wind_data if w["timestamp"] == ts), {}) 
         if wave:
             local_time = datetime.utcfromtimestamp(ts).replace(tzinfo=pytz.utc).astimezone(LOCAL_TZ)
             swell = wave.get("swells", [{}])[0]
@@ -142,7 +140,6 @@ for rating in rating_data:
                 "wind_direction": wind.get("direction")
             })
 
-# === GROUP BLOCKS ===
 grouped = []
 if combined:
     current_block = [combined[0]]
@@ -157,10 +154,9 @@ if combined:
             current_block = [r]
     grouped.append(current_block)
 
-# === PRINT AND POST TO SLACK ===
 worthy_blocks = []
 
-print("\n🏄 Best Surf Times at Navarre Beach (Next 6 Days)\n")
+print(f"\n🏄 Best Surf Times at {SPOT_NAME} (Next 6 Days)\n")
 if not grouped:
     print("No FAIR or better conditions forecasted.")
 else:
@@ -184,8 +180,7 @@ else:
         tide_str, tide_trend, tide_start = get_tide_trend(block[0]['timestamp'], block[-1]['timestamp'], tide_data)
         tide_ideal = tide_trend == "Rising" and tide_start <= 0.5
         offshore = avg_wind_dir is not None and (avg_wind_dir <= 60 or avg_wind_dir >= 300)
-        good_combo = (raw_key in ["FAIR_TO_GOOD", "GOOD", "GOOD_TO_EPIC", "EPIC"] and avg_period and avg_period >= 7) \
-            or (raw_key == "FAIR" and avg_period and avg_period >= 11)
+        good_combo = (raw_key in ["FAIR_TO_GOOD", "GOOD", "GOOD_TO_EPIC", "EPIC"] and avg_period and avg_period >= 7)             or (raw_key == "FAIR" and avg_period and avg_period >= 11)
 
         is_perfect = offshore and tide_ideal and good_combo
         emoji = "🔥 " if is_perfect else ""
@@ -212,7 +207,6 @@ else:
         if good_combo:
             worthy_blocks.append(summary)
 
-# === POST ALL WORTHY BLOCKS TO SLACK ===
 if worthy_blocks:
     message = "*🏄 Worthy Surf Blocks This Week:*\n" + "\n".join(worthy_blocks)
     post_to_slack(message)
