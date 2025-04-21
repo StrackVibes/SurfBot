@@ -9,9 +9,11 @@ Surfbot pulls surf conditions from Surfline and posts only the best windows dire
 - Labels wind: **Offshore**, **Onshore**, or **Cross-shore**
 - Shows tide trend + flags **ideal low-rising tide**
 - 🔥 Emoji for the **perfect combo** (offshore + low rising tide + good swell)
-- Automatically posts to Slack
+- Automatically posts to Slack (only when it’s worth it)
 
-## 🚀 Setup Instructions
+---
+
+## 🚀 Quick Start
 
 ### 1. Clone the Repo
 ```bash
@@ -21,68 +23,75 @@ cd surfbot
 
 ### 2. Install Dependencies
 ```bash
-pip install requests pytz
+pip install requests pytz python-dotenv
 ```
 
-## 🔗 Configure Your Spot and Slack Channel
+### 3. Configure the `.env` File
 
-Open `surfbot.py` and edit the following values near the top:
-
-```python
-SPOT_ID = "YOUR_SPOT_ID"  # Get this from Surfline
-webhook_url = "https://hooks.slack.com/services/XXX/YYY/ZZZ"
+Create a `.env` file or copy the template:
+```bash
+cp .env.example .env
 ```
+
+Edit `.env` to set up your spot and Slack webhook:
+```env
+# Surfline Info
+SPOT_ID=5842041f4e65fad6a7708b03
+SPOT_NAME=Navarre Beach
+LOCAL_TZ=US/Central
+
+# Slack Settings
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
+SLACK_CHANNEL=#surf-reports
+SLACK_USERNAME=surfbot
+```
+
+---
 
 ## 🌐 How to Find Your Surfline Spot ID
 
 1. Go to [Surfline.com](https://www.surfline.com)
-2. Find your surf break (e.g., Navarre Beach)
-3. Look at the URL:
+2. Search for your surf break (e.g., Navarre Beach)
+3. Grab the ID from the URL:
    ```
    https://www.surfline.com/surf-report/navarre-beach/5842041f4e65fad6a7708b03
    ```
-4. Copy the long alphanumeric ID at the end → that’s your `SPOT_ID`.
+
+---
 
 ## 💬 How to Create a Slack Webhook
 
 1. Go to [Slack Incoming Webhooks](https://my.slack.com/services/new/incoming-webhook/)
-2. Choose the channel you want to post in (e.g., `#surf-reports`)
+2. Choose a channel (e.g. `#surf-reports`)
 3. Click **Add Incoming Webhooks Integration**
-4. Copy the generated webhook URL
-5. Paste it into your script:
-   ```python
-   webhook_url = "https://hooks.slack.com/services/XXX/YYY/ZZZ"
-   ```
+4. Copy the generated webhook URL and add it to `.env`
 
-## 🕒 Automate with Cron
+---
 
-To check every morning and post if conditions are good:
+## 🕒 Automate It with Cron
+
+To check each morning and post to Slack:
 
 ```bash
 crontab -e
 ```
 
-Add something like:
+Add:
 ```
-0 6 * * * /usr/bin/python3 /path/to/navarre.py
+0 6 * * * /usr/bin/python3 /path/to/surfbot.py
 ```
+
+---
 
 ## 🌬️ Customizing Wind Labels for Your Break
 
-Wind classifications like **offshore**, **onshore**, and **cross-shore** are currently calibrated for **Navarre Beach, Florida**, which faces **south**.
+The wind labels (offshore/onshore/cross-shore) are currently calibrated for **Navarre Beach, Florida**, which faces **south**.
 
-If you're using a different surf break (like **Pipeline**, which faces **north/northwest**), you should **adjust the wind direction logic** to match your beach orientation.
-
-### 📍 Example: Pipeline (North/NW facing)
-
-Update this section in `surfbot.py`:
+If your break faces a different direction (like Pipeline — northwest), update this function in `surfbot.py`:
 
 ```python
 def get_wind_label(degrees):
-    if degrees is None:
-        return ""
-    # Offshore for Pipeline = South winds
-    if 120 <= degrees <= 240:
+    if 120 <= degrees <= 240:  # Pipeline: offshore from S
         return "✅ Offshore winds — clean conditions"
     elif 300 <= degrees or degrees <= 60:
         return "⚠️ Onshore winds — likely choppy"
@@ -91,21 +100,18 @@ def get_wind_label(degrees):
     return ""
 ```
 
-You’ll need to match:
-- **Offshore winds** = coming from land (opposite of wave direction)
-- **Onshore winds** = coming from ocean
-- **Cross-shore** = parallel to shoreline
+---
 
-Use a map and a compass if needed — or just stand at the break and see which way the wind feels "clean."
-
-## ✅ Example Output in Slack
+## ✅ Example Slack Message
 
 ```
-🔥 Tue Apr 20, 06:00 AM to 09:00 AM — Fair to Good (Rating: 3.1)
+🔥 Tue Apr 23, 06:00 AM to 09:00 AM — Fair to Good (Rating: 3.1)
   🌊 2.5–3.5 ft waves
   🌬️ Wind: 4.3 kts @ 335° ↖️ NW ✅ Offshore winds — clean conditions
   📈 Swell: 7.5 s period
   🌊 Tide: Rising (0.3ft → 1.0ft) ✅ Ideal: Low tide rising
 ```
 
-Paddle in. 🌊
+---
+
+PRs welcome. Paddle in. 🌊
