@@ -28,7 +28,7 @@ params = {
     "resources": "all"
 }
 headers = {
-    "User-Agent": "surfbot/1.0 (+https://github.com/surfbot)"
+    "User-Agent": "surfbot/1.0 (+https://github.com/StrackVibes/SurfBot)"
 }
 
 def post_to_slack(message):
