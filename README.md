@@ -1,4 +1,4 @@
-# 🌊 Surfbot – Surf Forecasts Posted to Slack (Only When It’s Good)
+# 🌊 Surfbot – Surf Forecasts Posted to Slack
 
 > _“I don’t know about you, but I hate checking Surfline every day just to see if there’s something on the horizon.  
 > I’d rather get a notification only when it’s worth paddling out, customized to the kind of surf I actually want. ”_  
